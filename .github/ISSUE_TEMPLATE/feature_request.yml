@@ -1,0 +1,30 @@
+name: ✨ Feature Request
+description: Suggest a new feature or enhancement
+labels: ["enhancement"]
+assignees: []
+body:
+  - type: textarea
+    id: feature
+    attributes:
+      label: Feature Description
+      description: A clear description of the feature you want
+      placeholder: "I would like to be able to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why do you want this feature?
+      placeholder: "This would help me..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions you've considered
+    validations:
+      required: false
