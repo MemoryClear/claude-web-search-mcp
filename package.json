@@ -1,0 +1,44 @@
+{
+  "name": "claude-web-search-mcp",
+  "version": "1.2.0",
+  "description": "MCP Server for web search and scraping with multi-provider fallback",
+  "main": "dist/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "build:server": "tsc --project tsconfig.server.json",
+    "start": "node dist/index.js",
+    "start:server": "node dist/server.js",
+    "start:mcp": "node dist/mcp-http-server.js",
+    "dev:mcp": "tsx src/mcp-http-server.ts",
+    "dev": "tsx src/index.ts",
+    "dev:server": "tsx src/server.ts",
+    "test": "echo \"Run: npm run dev\""
+  },
+  "keywords": [
+    "mcp",
+    "search",
+    "web",
+    "scraping",
+    "claude"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "yaml": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

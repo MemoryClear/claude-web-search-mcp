@@ -1,0 +1,82 @@
+# Claude Web Search MCP Server 配置文件
+# v1.2.0 - 中国极致版
+
+# ============ 服务配置 ============
+server:
+  port: 3001
+  host: "0.0.0.0"
+  api_key: "your-secret-api-key"     # 生产环境请使用强密钥
+
+# ============ 安全配置 ============
+security:
+  rate_limit:
+    window_ms: 60000
+    max_requests: 1000
+  allowed_ips: []
+  force_https: false
+  cors:
+    enabled: true
+    origin: "*"
+
+# ============ 搜索配置 ============
+search:
+  # 搜索引擎列表（按优先级排序）
+  providers:
+    - name: baidu
+      enabled: true
+      # 百度搜索，国内直接可用
+    - name: sogou
+      enabled: true
+      # 搜狗搜索，国内直接可用
+    - name: zh360
+      enabled: true
+      # 360搜索，国内直接可用
+    - name: duckduckgo
+      enabled: true
+      # DuckDuckGo HTML 搜索
+    - name: bingCN
+      enabled: false
+      # 必应中文（备用）
+    - name: bing
+      enabled: false
+      api_key: ""
+      # Bing Search API（需要 API Key）
+    - name: serpapi
+      enabled: false
+      api_key: ""
+      # SerpAPI（需要 API Key）
+
+  # 搜索策略
+  strategy:
+    mode: "priority"            # priority（顺序）或 parallel（并行）
+    timeout_ms: 15000           # 并行模式超时
+    deduplication: true         # 结果去重
+
+# ============ 抓取配置 ============
+scraping:
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  timeout_ms: 10000
+  max_content_length: 100000
+  remove_selectors:
+    - "script"
+    - "style"
+    - "nav"
+    - "footer"
+    - ".advertisement"
+    - "#sidebar"
+    - ".nav"
+    - ".menu"
+    - ".header"
+    - ".cookie"
+    - ".popup"
+    - ".modal"
+
+# ============ 日志配置 ============
+logging:
+  level: "info"
+  file:
+    enabled: true
+    path: "./logs/app.log"
+  audit:
+    enabled: true
+    log_body_on_error: true
