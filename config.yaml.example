@@ -1,0 +1,51 @@
+# Web Search MCP Server Configuration
+# Copy this to config.yaml and fill in your API keys
+
+search:
+  # Search providers in priority order (top = highest priority)
+  # All providers are tried in order until one succeeds
+  providers:
+    - name: bing
+      enabled: true
+      # Bing Search API Key (get from https://portal.azure.com/)
+      # Free tier: 1000 searches/month
+      api_key: ""
+
+    - name: duckduckgo
+      enabled: true
+      # No API key needed for DuckDuckGo HTML search
+      # Note: May be rate-limited or blocked for heavy usage
+
+    - name: serpapi
+      enabled: false
+      # SerpAPI Key (get from https://serpapi.com/)
+      # Free tier: 100 searches/month
+      api_key: ""
+
+scraping:
+  # User-Agent string for web requests
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  
+  # Request timeout in milliseconds
+  timeout_ms: 10000
+  
+  # Maximum content length (characters)
+  max_content_length: 100000
+  
+  # CSS selectors to remove from scraped content (ads, navigation, etc.)
+  remove_selectors:
+    - "script"
+    - "style"
+    - "nav"
+    - "footer"
+    - ".advertisement"
+    - "#sidebar"
+    - ".nav"
+    - ".menu"
+    - ".header"
+    - ".cookie"
+    - ".popup"
+    - ".modal"
+    - "[role='navigation']"
+    - "[role='banner']"
+    - "[role='complementary']"
