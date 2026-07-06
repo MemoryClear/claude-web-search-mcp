@@ -11,19 +11,24 @@ export class DuckDuckGoSearchProvider extends BaseSearchProvider {
 
   async search(query: string, numResults: number): Promise<SearchResult[]> {
     const encodedQuery = this.sanitizeQuery(query);
-    const config = getConfig();
-    const url = `https://html.duckduckgo.com/html/?q=${encodedQuery}&kl=wt-wt`;
+    const globalConfig = getConfig();
+    const providerCfg = globalConfig.search.providers.find(p => p.name === 'duckduckgo');
+
+    // DuckDuckGo region/language，config 优先级 > 默认 cn-zh（对中国用户友好）
+    const region = providerCfg?.region || 'cn-zh';
+    const language = providerCfg?.language || 'zh-CN';
+    const url = `https://html.duckduckgo.com/html/?q=${encodedQuery}&kl=${region}`;
 
     try {
       logger.info('duckduckgo', `Searching: ${query}`);
       
       const response = await this.fetchWithTimeout(url, {
         headers: {
-          'User-Agent': config.scraping.user_agent,
+          'User-Agent': globalConfig.scraping.user_agent,
+          'Accept-Language': language + ',zh;q=0.9,en;q=0.8',
           'Accept': 'text/html',
-          'Accept-Language': 'en-US,en;q=0.9',
         },
-      }, config.scraping.timeout_ms);
+      }, globalConfig.scraping.timeout_ms);
 
       if (!response.ok) {
         logger.error('duckduckgo', `HTTP error: ${response.status}`);
@@ -31,6 +36,12 @@ export class DuckDuckGoSearchProvider extends BaseSearchProvider {
       }
 
       const html = await response.text();
+
+      if (html.includes('Our systems have detected unusual traffic')) {
+        logger.warn('duckduckgo', 'Blocked by DDG anti-bot');
+        this.handleError(new Error('Rate limited by DuckDuckGo'), 'search');
+      }
+
       const $ = load(html);
 
       const results: SearchResult[] = [];

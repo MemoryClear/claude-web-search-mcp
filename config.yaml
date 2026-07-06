@@ -5,7 +5,7 @@
 server:
   port: 3001
   host: "0.0.0.0"
-  api_key: "your-secret-api-key"     # 生产环境请使用强密钥
+  api_key: "mamazaidawoyici"     # 生产环境请使用强密钥
 
 # ============ 安全配置 ============
 security:
@@ -34,6 +34,8 @@ search:
     - name: duckduckgo
       enabled: true
       # DuckDuckGo HTML 搜索
+      region: "cn-zh"             # 地区代码，cn-zh = 中国
+      language: "zh-CN"           # Accept-Language
     - name: bingCN
       enabled: false
       # 必应中文（备用）
@@ -57,6 +59,8 @@ scraping:
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
   timeout_ms: 10000
   max_content_length: 100000
+  retry_count: 2                 # 抓取失败重试次数
+  retry_delay_ms: 500             # 首次重试间隔（ms），后续指数退避
   remove_selectors:
     - "script"
     - "style"

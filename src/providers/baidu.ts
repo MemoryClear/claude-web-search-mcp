@@ -119,16 +119,20 @@ export class BaiduSearchProvider extends BaseSearchProvider {
 
   private cleanBaiduUrl(href: string): string {
     if (!href) return '';
-    
-    // 如果是百度跳转链接，返回百度链接本身（scrape 时会跟随重定向）
-    if (href.includes('baidu.com/link')) {
+
+    // 百度内部跳转链接，保留完整 URL 让 scrape 跟随重定向获取真实 URL
+    if (href.includes('baidu.com/link') || href.includes('baidu.com/ul/')) {
       return href;
     }
-    
-    // 清理多余参数
+
+    // 已经是外部完整 URL，只去除 utm_* 等跟踪参数，保留其他查询参数
     try {
       const url = new URL(href);
-      return url.origin + url.pathname;
+      const stripParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term',
+        'utm_content', 'ref', 'source', 'from', 'ie', 'rsv_idx'];
+      for (const p of stripParams) url.searchParams.delete(p);
+      url.pathname = url.pathname.replace(/\/+$/, '');
+      return url.toString();
     } catch {
       return href;
     }

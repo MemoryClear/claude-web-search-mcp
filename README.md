@@ -220,12 +220,20 @@ claude-web-search-mcp/
 
 ## 📝 更新日志
 
+### v1.3.0 (2026-07-06)
+- ✅ 搜狗/360/必应中文：字符串解析全面替换为 Cheerio 解析
+- ✅ 错误处理：7 个 provider 全部统一使用 `handleError`
+- ✅ 百度搜索：URL 清理保留百度跳转链接 + 白名单去除外部跟踪参数（utm_* 等）
+- ✅ 抓取结果：改用 `response.url`（重定向后最终 URL）
+- ✅ DuckDuckGo：新增 `region`/`language` 配置项，默认 cn-zh
+- ✅ 页面抓取：新增指数退避重试机制（`retry_count`/`retry_delay_ms` 可配置）
+- ✅ 内容提取：段落级提取 + link-density 过滤 + 噪音关键词过滤
+- ✅ Rate Limiter：重构为 sliding-window 无内存泄漏实现
+- ✅ 可观测性：新增 Prometheus metrics 端点 `/metrics`，支持 `search_requests_total` 计数器 + `search_duration_ms`/`scrape_duration_ms` 直方图
+- ✅ DuckDuckGo 反爬页面检测
+- ✅ 配置文件：`config.yaml` 补充 `region`/`language`/`retry_count`/`retry_delay_ms` 字段
+
 ### v1.2.0 (2026-03-27)
-- ✅ 新增国产搜索引擎：搜狗、360、必应中文
-- ✅ 支持并行搜索策略
-- ✅ 结果自动去重
-- ✅ 完善日志系统（上海时区）
-- ✅ 更新文档
 
 ### v1.1.0
 - ✅ 新增 `fetch_content` 参数

@@ -7,11 +7,16 @@ import { loadConfig } from './config';
 import { searchWithFallback } from './providers';
 import { scrapeUrl } from './utils/html';
 import { logger } from './utils/logger';
+import { createRateLimiter } from './utils/rateLimiter';
+import { metrics } from './utils/metrics';
+
+const rateLimiter = createRateLimiter();
 
 // 加载配置
 const config = loadConfig();
 
 const app = express();
+app.set('trust proxy', 1);  // 支持 X-Forwarded-For 头
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.API_KEY || 'your-secret-api-key';
 
@@ -19,6 +24,24 @@ const API_KEY = process.env.API_KEY || 'your-secret-api-key';
 
 app.use(cors());
 app.use(express.json());
+
+// Rate Limit 中间件（按 IP）
+function rateLimit(req: Request, res: Response, next: NextFunction) {
+  const ip = (req.ip || req.socket.remoteAddress || 'unknown').replace('::ffff:', '');
+  const { allowed, remaining, resetMs } = rateLimiter.isAllowed(ip);
+
+  res.setHeader('X-RateLimit-Remaining', String(remaining));
+  res.setHeader('X-RateLimit-Reset', String(Math.ceil((Date.now() + resetMs) / 1000)));
+
+  if (!allowed) {
+    return res.status(429).json({
+      success: false,
+      error: 'Too Many Requests',
+      message: `Rate limit exceeded. Retry after ${Math.ceil(resetMs / 1000)}s.`,
+    });
+  }
+  next();
+}
 
 // API Key 认证中间件
 function authenticate(req: Request, res: Response, next: NextFunction) {
@@ -75,6 +98,12 @@ function errorResponse(error: string): ApiResponse<null> {
 
 // ============ API 路由 ============
 
+// Prometheus metrics 端点
+app.get('/metrics', (_req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/plain; version=0.0.4');
+  res.send(metrics.toPrometheus());
+});
+
 // 健康检查
 app.get('/health', (req: Request, res: Response) => {
   res.json({
@@ -85,18 +114,20 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // 搜索接口（对标 Firecrawl：支持 fetch_content 参数返回完整文章内容）
-app.post('/api/search', authenticate, requestLogger, async (req: Request, res: Response) => {
+app.post('/api/search', rateLimit, authenticate, requestLogger, async (req: Request, res: Response) => {
   const startTime = Date.now();
   
   try {
     const { query, num_results = 5, fetch_content = false, scrape_limit = 3 } = req.body;
-    
+    const startMs = Date.now();
+
     if (!query || typeof query !== 'string') {
       return res.status(400).json(errorResponse('Missing or invalid "query" parameter'));
     }
-    
+
     const limit = Math.min(Math.max(1, Number(num_results)), 20);
-    const { results, provider } = await searchWithFallback(query, limit);
+    const { results, provider, mode } = await searchWithFallback(query, limit);
+    metrics.observeHistogram('search_duration_ms', Date.now() - startMs, { name: 'search', mode });
 
     // 如果不需要抓取内容，直接返回搜索结果（Firecrawl 基础模式）
     if (!fetch_content) {
@@ -156,7 +187,7 @@ app.post('/api/search', authenticate, requestLogger, async (req: Request, res: R
 });
 
 // 抓取接口（单个 URL）
-app.post('/api/scrape', authenticate, requestLogger, async (req: Request, res: Response) => {
+app.post('/api/scrape', rateLimit, authenticate, requestLogger, async (req: Request, res: Response) => {
   const startTime = Date.now();
   
   try {
@@ -174,20 +205,21 @@ app.post('/api/scrape', authenticate, requestLogger, async (req: Request, res: R
       extractLinks: extract_links,
       extractImages: extract_images,
     });
-    
+
     const duration = Date.now() - startTime;
-    
+    metrics.observeHistogram('scrape_duration_ms', duration, { name: 'scrape', status: 'ok' });
     res.json(successResponse(result, 'direct', duration));
     
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Scrape failed';
     logger.error('api', `Scrape error: ${message}`);
+    metrics.observeHistogram('scrape_duration_ms', Date.now() - startTime, { name: 'scrape', status: 'error' });
     res.status(500).json(errorResponse(message));
   }
 });
 
 // 搜索 + 抓取一站式接口（类似 Firecrawl 的 /scrape）
-app.post('/api/search-scrape', authenticate, requestLogger, async (req: Request, res: Response) => {
+app.post('/api/search-scrape', rateLimit, authenticate, requestLogger, async (req: Request, res: Response) => {
   const startTime = Date.now();
   
   try {
@@ -199,36 +231,41 @@ app.post('/api/search-scrape', authenticate, requestLogger, async (req: Request,
     
     // 1. 先搜索
     const limit = Math.min(Math.max(1, Number(num_results)), 10);
-    const { results, provider } = await searchWithFallback(query, limit);
-    
+    const { results, provider, mode } = await searchWithFallback(query, limit);
+    metrics.observeHistogram('search_duration_ms', Date.now() - startTime, { name: 'search', mode });
+
     // 2. 对第一个结果抓取内容
     if (results.length > 0) {
       const topResult = results[0];
-      
+      const scrapeStart = Date.now();
+
       try {
         const scrapeResult = await scrapeUrl(topResult.url, {
           extractLinks: extract_links,
           extractImages: extract_images,
         });
-        
+
         const duration = Date.now() - startTime;
-        
+        metrics.observeHistogram('scrape_duration_ms', Date.now() - scrapeStart, { name: 'scrape', status: 'ok' });
         res.json(successResponse({
           query,
           search_results: results,
           scraped_content: scrapeResult,
           provider,
+          mode,
         }, provider, duration));
-        
+
       } catch {
         // 抓取失败也返回搜索结果
         const duration = Date.now() - startTime;
+        metrics.observeHistogram('scrape_duration_ms', Date.now() - scrapeStart, { name: 'scrape', status: 'error' });
         res.json(successResponse({
           query,
           search_results: results,
           scraped_content: null,
           scrape_error: 'Failed to scrape the top result',
           provider,
+          mode,
         }, provider, duration));
       }
     } else {
@@ -238,12 +275,14 @@ app.post('/api/search-scrape', authenticate, requestLogger, async (req: Request,
         search_results: [],
         scraped_content: null,
         provider,
+        mode,
       }, provider, duration));
     }
     
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Search-scrape failed';
     logger.error('api', `Search-scrape error: ${message}`);
+    metrics.observeHistogram('search_duration_ms', Date.now() - startTime, { name: 'search', mode: 'unknown' });
     res.status(500).json(errorResponse(message));
   }
 });

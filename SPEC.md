@@ -232,6 +232,28 @@ curl -X POST http://localhost:3000/api/search \
 
 ---
 
-*规格版本: v1.1*  
+*规格版本: v1.3*  
 *创建时间: 2026-03-26*  
-*更新时间: 2026-03-26*
+*更新时间: 2026-07-06*
+
+---
+
+## 版本历史
+
+### v1.3 (2026-07-06)
+| 编号 | 规格变动 | 说明 |
+|------|---------|------|
+| #1 | 并行搜索策略 | `searchParallel()` + `Promise.allSettled` + URL 去重 |
+| #2 | Cheerio 替换字符串解析 | Sogou/Zh360/BingCN 全部重写 |
+| #3 | handleError 统一 | 7 个 provider 统一使用 BaseSearchProvider.handleError |
+| #4 | Baidu URL 清理 | 白名单跟踪参数清理 + 保留百度跳转 + response.url |
+| #5 | DuckDuckGo 语言地区 | region/language 配置项，默认 cn-zh |
+| #6 | 抓取重试机制 | 指数退避重试（可配置次数和间隔） |
+| #7 | 内容提取质量 | paragraph-level + link-density 过滤 |
+| #9 | Rate Limiter | sliding-window 无内存泄漏 + 惰性清理 |
+| #13 | 可观测性 | Prometheus /metrics + 4 路 counter + histogram |
+
+### v1.1 (2026-03-26)
+| 编号 | 规格变动 | 说明 |
+|------|---------|------|
+| — | 初始规格 | 多源搜索 + Fallback + 抓取 + MCP 工具 + REST API |

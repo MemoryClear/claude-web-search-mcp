@@ -1,38 +1,77 @@
 # Web Search MCP Server Configuration
 # Copy this to config.yaml and fill in your API keys
 
+server:
+  port: 3001
+  host: "0.0.0.0"
+  api_key: "your-secret-api-key"
+
+security:
+  rate_limit:
+    window_ms: 60000
+    max_requests: 1000
+  cors:
+    enabled: true
+    origin: "*"
+
 search:
   # Search providers in priority order (top = highest priority)
-  # All providers are tried in order until one succeeds
   providers:
-    - name: bing
+    - name: baidu
       enabled: true
-      # Bing Search API Key (get from https://portal.azure.com/)
-      # Free tier: 1000 searches/month
-      api_key: ""
+      # 国内直接可用，无需 API Key
+
+    - name: sogou
+      enabled: true
+      # 国内直接可用
+
+    - name: zh360
+      enabled: true
+      # 国内直接可用
+
+    - name: bingCN
+      enabled: false
+      # cn.bing.com，备用
 
     - name: duckduckgo
       enabled: true
-      # No API key needed for DuckDuckGo HTML search
-      # Note: May be rate-limited or blocked for heavy usage
+      # DuckDuckGo HTML 搜索，无需 API Key
+      # region: 地区代码，默认 cn-zh（中国用户友好）
+      region: "cn-zh"
+      # language: Accept-Language 头，默认 zh-CN
+      language: "zh-CN"
+
+    - name: bing
+      enabled: false
+      # Bing Search API（需付费，建议置 false，用国产引擎）
+      # api_key: ""
 
     - name: serpapi
       enabled: false
-      # SerpAPI Key (get from https://serpapi.com/)
-      # Free tier: 100 searches/month
-      api_key: ""
+      # SerpAPI（需付费，建议置 false）
+      # api_key: ""
+
+  # 搜索策略
+  strategy:
+    # 模式: priority（顺序 fallback）或 parallel（并行多源）
+    mode: "priority"
+    # 单个 provider 超时（ms）
+    timeout_ms: 15000
+    # 结果去重（去除不同 provider 返回的同一 URL）
+    deduplication: true
 
 scraping:
-  # User-Agent string for web requests
+  # User-Agent
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-  
-  # Request timeout in milliseconds
+  # 请求超时（ms）
   timeout_ms: 10000
-  
-  # Maximum content length (characters)
+  # 最大内容长度（字符）
   max_content_length: 100000
-  
-  # CSS selectors to remove from scraped content (ads, navigation, etc.)
+  # 抓取失败重试次数（默认 2，即最多尝试 3 次）
+  retry_count: 2
+  # 首次重试间隔（ms），后续指数退避（×2、×4…）
+  retry_delay_ms: 500
+  # CSS selectors to remove from scraped content
   remove_selectors:
     - "script"
     - "style"
@@ -49,3 +88,11 @@ scraping:
     - "[role='navigation']"
     - "[role='banner']"
     - "[role='complementary']"
+
+logging:
+  level: "info"
+  file:
+    enabled: true
+    path: "./logs/app.log"
+  audit:
+    enabled: true

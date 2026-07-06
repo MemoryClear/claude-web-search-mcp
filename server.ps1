@@ -11,7 +11,7 @@ function Get-ServerStatus {
     $procId = $null
     
     if (Test-Path $PID_FILE) {
-        $procId = Get-Content $PID_FILE -Raw
+        $procId = (Get-Content $PID_FILE -Raw).Trim()
         $proc = Get-Process -Id $procId -ErrorAction SilentlyContinue
         if ($proc) { $running = $true }
     }
@@ -40,7 +40,7 @@ switch ($args[0]) {
         Start-Sleep -Seconds 3
         
         if ($p.Id) {
-            $p.Id | Out-File -FilePath $PID_FILE -Encoding ascii
+            [System.IO.File]::WriteAllText($PID_FILE, $p.Id)
             Write-Host " [OK] Server started (hidden)"
             Write-Host "   PID:     $($p.Id)"
             Write-Host "   MCP:     http://localhost:3001/mcp"
@@ -90,7 +90,7 @@ switch ($args[0]) {
         Start-Sleep -Seconds 3
         
         if ($p.Id) {
-            $p.Id | Out-File -FilePath $PID_FILE -Encoding ascii
+            [System.IO.File]::WriteAllText($PID_FILE, $p.Id)
             Write-Host " [OK] Server restarted (PID: $($p.Id))"
         } else {
             Write-Host " [X] Restart failed"
@@ -115,11 +115,11 @@ switch ($args[0]) {
         Write-Host ""
         
         try {
-            $response = Invoke-WebRequest -Uri "http://localhost:3001/health" -UseBasicParsing -TimeoutSec 2
+            $response = Invoke-WebRequest -Uri "http://localhost:3001/health" -UseBasicParsing -TimeoutSec 3
             Write-Host "   Health:  OK"
             Write-Host $response.Content
         } catch {
-            Write-Host "   Health:  FAIL"
+            Write-Host "   Health:  FAIL ($($_.Exception.Message))"
         }
         Write-Host ""
     }

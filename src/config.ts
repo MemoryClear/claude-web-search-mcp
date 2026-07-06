@@ -29,6 +29,9 @@ export interface SearchProviderConfig {
   name: string;
   enabled: boolean;
   api_key?: string;
+  // DuckDuckGo / Bing 用
+  region?: string;
+  language?: string;
 }
 
 export interface SearchStrategyConfig {
@@ -47,6 +50,8 @@ export interface ScrapingConfig {
   timeout_ms: number;
   max_content_length: number;
   remove_selectors: string[];
+  retry_count: number;        // 最大重试次数
+  retry_delay_ms: number;     // 首次重试间隔（ms），后续指数增长
 }
 
 export interface LoggingConfig {
@@ -107,6 +112,8 @@ const DEFAULT_CONFIG: Config = {
     timeout_ms: 10000,
     max_content_length: 100000,
     remove_selectors: ['script', 'style', 'nav', 'footer'],
+    retry_count: 2,
+    retry_delay_ms: 500,
   },
   logging: {
     level: 'info',
