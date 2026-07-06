@@ -5,7 +5,7 @@
 server:
   port: 3001
   host: "0.0.0.0"
-  api_key: "mamazaidawoyici"     # 生产环境请使用强密钥
+  api_key: "your-strong-api-key"     # 生产环境请使用强密钥
 
 # ============ 安全配置 ============
 security:
